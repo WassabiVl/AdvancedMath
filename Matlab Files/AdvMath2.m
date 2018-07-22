@@ -102,7 +102,7 @@ Tss(1,:)=T_west;             Tss2(1,:)=T_west;
     end
    
 
-%% 4- Finite difference section (Using 2nd order Runge Kutte or Euler in time or forward method)
+%% 4- Implected difference section (Using Advances diffusion equation in time with Guass elimination)
 
 k=1;
 A = ContructMatric(NodesL, NodesH, sigma);
