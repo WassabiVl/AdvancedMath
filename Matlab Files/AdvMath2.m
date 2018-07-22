@@ -30,12 +30,12 @@ NodesL = 20; % nodes in x direction
 NodesH = 20; % nodes in y direction
 L = 1; H = 0.5; % Length and height of each plate in meters
 T_initial= 0 ;                   % Initial temperature in all nodes ( the whole plate )
-T_east   =  50;                   % temperature on the upper side ( at y=0  "Dirichlet Conditions" )
-T_west   =  50;                   % temperature on the lower side ( at y=H "Dirichlet Conditions" )
-T_north  = 50 ;                   % temperature on the left  side ( at x=0  "Dirichlet Conditions" )
-T_south  = 50 ;                   % temperature on the right side ( at x=L "Dirichlet Conditions" ) 
+T_east   =  100;                   % temperature on the upper side ( at y=0  "Dirichlet Conditions" )
+T_west   =  100;                   % temperature on the lower side ( at y=H "Dirichlet Conditions" )
+T_north  = 100 ;                   % temperature on the left  side ( at x=0  "Dirichlet Conditions" )
+T_south  = 100 ;                   % temperature on the right side ( at x=L "Dirichlet Conditions" ) 
 T_bc = 100; %Dirichlet BC
-t_end=100 ;                        % final time for visual simulation (sec)
+t_end=10 ;                        % final time for visual simulation (sec)
 dt=0.6 ;                           % time step (1 sec)
 
 
@@ -68,13 +68,15 @@ end
 message=msgbox('Your computer is now solving the problem, Please wait..... ');    % Busy message 
 % ----------------- Initial Conditions for finite difference section ---------------
 T=zeros(NodesL+2,NodesH+2,75000);                       % set max iterations 75,000 due to memory limitations (T variable takes maximum 1GB in memory)
-T(:,1,:)=T_south;
-T(:,NodesH+1,:)=T_north;
-T(:,NodesH+2,:)=T_north;                            % Redundant, it has no effect in calculations but is required in plotting section
-T(NodesL+1,:,:)=T_east;
-T(NodesL+2,:,:)=T_east;                             % Redundant, it has no effect in calculations but is required in plotting section
-T(1,:,:)=T_west;
 T(:,:,1)=T_initial;
+T(:,1,1)=T_south;
+T(:,2,1)=T_south;
+T(:,NodesH+1,1)=T_north;
+T(:,NodesH+2,1)=T_north;                            % Redundant, it has no effect in calculations but is required in plotting section
+T(NodesL+1,:,1)=T_east;
+T(NodesL+2,:,1)=T_east;                             % Redundant, it has no effect in calculations but is required in plotting section
+T(1,:,1)=T_west;
+T(2,:,1)=T_west;
 % ------------------- Initial Conditions for steady state section -------------------
 Tss=zeros(NodesL+2,NodesH+2);        Tss2=zeros(NodesL+2,NodesH+2);
 Tss(:,1)=T_south;            Tss2(:,1)=T_south;
@@ -105,19 +107,23 @@ Tss(1,:)=T_west;             Tss2(1,:)=T_west;
 %% 4- Implected difference section (Using Advances diffusion equation in time with Guass elimination)
 
 k=1;
-A = ContructMatric(NodesL, NodesH, sigma);
+A = ContructMatric(NodesL+2, NodesH+2, sigma);
 err_R_k_max(k)=1000;                            % initial error
 err_R_k_min(k)=1000;                            % initial error
-while err_R_k_max(k)>=tolerance || err_R_k_min(k)>=tolerance
+%while err_R_k_max(k)>=tolerance || err_R_k_min(k)>=tolerance 
+    disp(T(:,:,1))
     for j=1:t_end
-       b = ContructRHS(NodesL, NodesH, sigma, T, T_bc);
+       b = ContructRHS(NodesL+2, NodesH+2, sigma, T(:,:,k), T_bc);
        T_interior = gauss2(A,b);
-       MatrixT = map_1Dto2D(NodesL, NodesH, T_interior, T_bc);
-       if T(mid_j,mid_i)>=T_avg
+       MatrixT = map_1Dto2D(NodesL+2, NodesH+2, T_interior, T_bc);
+       if MatrixT(mid_j,mid_i)>=T_avg
            fprintf('Center of plate reached at time %d ', dt)
            break
        end
        k=k+1;
+       disp(MatrixT);
+       disp(T(:,:,k-1));
+       T(:,:,k) = MatrixT;
       err_R_k_max(k)=abs(max(max(T(:,:,k)-Tss)));        %calculate error
       disp(err_R_k_max(k));
       disp(err_R_k_max(k-1));
@@ -137,7 +143,7 @@ while err_R_k_max(k)>=tolerance || err_R_k_min(k)>=tolerance
        return
       end
     end
-end
+%end
 T=T(:,:,1:k);                                            % delete the unused assigned zero layers
 SStime=k*dt1;                                             % steady state time
 close(message)                                               % close the busy message
@@ -183,7 +189,7 @@ zlim([T_min T_max]); zlabel('Temperature');
 drawnow
 hold off
 
- subplot(2,2,4)
+subplot(2,2,4)
 hold on
 title(sprintf('Temperature at steady state time : %i seconds ',round(SStime)))
 scatter(k,Tss(floor(NodesL/4),floor(NodesH/4)),'ko','markerfacecolor','r'); 
@@ -203,38 +209,38 @@ hold off
 
 %%%             ------------ Animated plot ----------
 
-for j=1:n_time                               
+for j=1:k                               
     
-subplot(2,2,1)
-surf(x,y,T(:,:,j))
-hold on
-title(sprintf('Temperature at time : %i seconds ',round(j*((dt1+dt2)/2))))
-plot3(  L/4,  H/4,T_max,'ko','markerfacecolor','r') % plot red point
-plot3(  L/2,  H/2,T_max,'ko','markerfacecolor','g') % plot green point
-plot3(3*L/4,3*H/4,T_max,'ko','markerfacecolor','b') % plot blue point
-plot3(  L/4,  H/4,T_min,'ko','markerfacecolor','r') % plot red point
-plot3(  L/2,  H/2,T_min,'ko','markerfacecolor','g') % plot green point
-plot3(3*L/4,3*H/4,T_min,'ko','markerfacecolor','b') % plot blue point
-cb=colorbar;
-caxis([T_min T_max]);
-view(90,-90);
-xlim([0 L+dx]); xlabel('Length');
-ylim([0 H+dy]); ylabel('Width');
-zlim([T_min T_max]); zlabel('Temprature');
-drawnow
-hold off
+    subplot(2,2,1)
+    surf(x,y,T(:,:,j))
+    hold on
+    title(sprintf('Temperature at time : %i seconds ',round(j*((dt1+dt2)/2))))
+    plot3(  L/4,  H/4,T_max,'ko','markerfacecolor','r') % plot red point
+    plot3(  L/2,  H/2,T_max,'ko','markerfacecolor','g') % plot green point
+    plot3(3*L/4,3*H/4,T_max,'ko','markerfacecolor','b') % plot blue point
+    plot3(  L/4,  H/4,T_min,'ko','markerfacecolor','r') % plot red point
+    plot3(  L/2,  H/2,T_min,'ko','markerfacecolor','g') % plot green point
+    plot3(3*L/4,3*H/4,T_min,'ko','markerfacecolor','b') % plot blue point
+    cb=colorbar;
+    caxis([T_min T_max]);
+    view(90,-90);
+    xlim([0 L+dx]); xlabel('Length');
+    ylim([0 H+dy]); ylabel('Width');
+    zlim([T_min T_max]); zlabel('Temprature');
+    drawnow
+    hold off
 
-subplot(2,2,2)
-hold on
-title(sprintf('Temperature at time : %i seconds ',round(j*((dt1+dt2)/2))))
-scatter(j,T(floor((NodesL+2)/4),floor((NodesH+2)/4),j),'r.'); 
-scatter(j,T(ceil((NodesL+2)/2),ceil((NodesH+2)/2),j),'g.'); 
-scatter(j,T(ceil(3*(NodesL+2)/4),ceil(3*(NodesH+2)/4),j),'b.'); 
-axis tight; xlabel('Time Iterations');
-axis tight; ylabel('Temperature');
-legend('Red Point','Green Point ','Blue Point ','Location','northwest')
-drawnow
-hold off
+    subplot(2,2,2)
+    hold on
+    title(sprintf('Temperature at time : %i seconds ',round(j*((dt1+dt2)/2))))
+    scatter(j,T(floor((NodesL+2)/4),floor((NodesH+2)/4),j),'r.'); 
+    scatter(j,T(ceil((NodesL+2)/2),ceil((NodesH+2)/2),j),'g.'); 
+    scatter(j,T(ceil(3*(NodesL+2)/4),ceil(3*(NodesH+2)/4),j),'b.'); 
+    axis tight; xlabel('Time Iterations');
+    axis tight; ylabel('Temperature');
+    legend('Red Point','Green Point ','Blue Point ','Location','northwest')
+    drawnow
+    hold off
 
 end
 

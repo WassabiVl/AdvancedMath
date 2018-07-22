@@ -37,7 +37,7 @@ function RHS = ContructRHS(nx,ny,sigma, T, T_bc)
             elseif i == 1 % Left boundary (Dirichlet)
                  RHS(row_number) = T(j,i)*1/sigma + T_bc;
             elseif i ==nx-2 % Right boundary (Neumann)
-                 RHS(row_number) = T(j,i)*1/sigma;
+                 RHS(row_number) = T(j,i)*1/sigma+ T_bc;
             elseif j == 1 %Bottom boundary (Dirichlet)
                  RHS(row_number) = T(j,i)*1/sigma + T_bc;
             elseif j == ny-2

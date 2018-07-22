@@ -1,6 +1,6 @@
 % 2D Heat Equation with 2 Plates Using Finite Difference Method
 %  Wael Al Atrash 118011
-%   Advanced Numerical Mathmatics
+%   Advanced Numerical Mathematics
 %    Bauhaus University
 
 
@@ -30,12 +30,12 @@ NodesL = 20; % nodes in x direction
 NodesH = 20; % nodes in y direction
 L = 1; H = 0.5; % Length and height of each plate in meters
 T_initial= 0 ;                   % Initial temperature in all nodes ( the whole plate )
-T_east   =  50;                   % temperature on the upper side ( at y=0  "Dirichlet Conditions" )
-T_west   =  50;                   % temperature on the lower side ( at y=H "Dirichlet Conditions" )
-T_north  = 50 ;                   % temperature on the left  side ( at x=0  "Dirichlet Conditions" )
-T_south  = 50 ;                   % temperature on the right side ( at x=L "Dirichlet Conditions" ) 
-
-t_end=1000 ;                        % final time for visual simulation (sec)
+T_east   =  100;                   % temperature on the upper side ( at y=0  "Dirichlet Conditions" )
+T_west   =  100;                   % temperature on the lower side ( at y=H "Dirichlet Conditions" )
+T_north  = 100 ;                   % temperature on the left  side ( at x=0  "Dirichlet Conditions" )
+T_south  = 100 ;                   % temperature on the right side ( at x=L "Dirichlet Conditions" ) 
+T_bc = 100; %Dirichlet BC
+t_end=100 ;                        % final time for visual simulation (sec)
 dt=0.6 ;                           % time step (1 sec)
 
 
@@ -48,32 +48,33 @@ err_SS_max(k)=1;                                                                
 err_SS_min(k)=1;                                                                  % initial error
 dx=L/NodesL;                                                                  % delta x
 dy=H/NodesH; 
-dt1 = (0.25 * min([dx/2 dy])^2) / Alpha1;                            % time step for plate 1
-dt2 = (0.25 * min([dx/2 dy])^2) / Alpha2;                    % time step for plate 2% delta y
-n_time=round(t_end/(dt1+dt2));                                                           % number of iterations for time
+dt1 = (0.25 * min([dx dy])^2) / Alpha1; % time step for plate 1
+dt2 = (0.25 * min([dx dy])^2) / Alpha2; % time step for plate 2% delta y
+sigma = Alpha1*dt1/(dx/2) + Alpha2*dt2/(dx/2);
+A = ContructMatric(dx,dy,sigma);
+
+n_time=round(t_end/dt1);                                                           % number of iterations for time
 T_max=max([T_east T_west T_north T_south T_initial]);                      % Max T to set axes limits in plotting
 T_min=min([T_east T_west T_north T_south T_initial]);                      % Min T to set axes limits in plotting
 T_avg = (T_east+ T_west+ T_north+ T_south+ T_initial)/5;
 mid_i = round(NodesL/2);
 mid_j = round(NodesH/2);
-Solution_type=questdlg('Which method you want to solve the time derivative with ?','Question','Euler','2nd order Runge-Kutte','Forward','Euler');                     % solve with 2nd order Runge Kutte in time or 2 to solve with Euler
 
-if dt1 <= 1/(2*Alpha1*((1/dx^2)+(1/dy^2))) || dt2 <= 1/(2*Alpha2*((1/dx^2)+(1/dy^2)))                              % test the stability condition 
+if dt1 <= 1/(2*Alpha1*((1/dx^2)+(1/dy^2))) || dt2 <= 1/(2*Alpha2*((1/dx^2)+(1/dy^2)))                            % test the stability condition 
 else 
     fprintf('Error, the stability condition is not met\nPlease return to "Inputs Section" and choose a "dt" smaller than %f \n',1/(2*Alpha1*((1/dx^2)+(1/dy^2))))
     return
 end
-
 message=msgbox('Your computer is now solving the problem, Please wait..... ');    % Busy message 
 % ----------------- Initial Conditions for finite difference section ---------------
 T=zeros(NodesL+2,NodesH+2,75000);                       % set max iterations 75,000 due to memory limitations (T variable takes maximum 1GB in memory)
-T(:,1,:)=T_south;
-T(:,NodesH+1,:)=T_north;
-T(:,NodesH+2,:)=T_north;                            % Redundant, it has no effect in calculations but is required in plotting section
-T(NodesL+1,:,:)=T_east;
-T(NodesL+2,:,:)=T_east;                             % Redundant, it has no effect in calculations but is required in plotting section
-T(1,:,:)=T_west;
 T(:,:,1)=T_initial;
+T(:,1,1)=T_south;
+T(:,end,1)=T_north;
+T(:,NodesH+2,1)=T_north;                            % Redundant, it has no effect in calculations but is required in plotting section
+T(NodesL+1,:,1)=T_east;
+T(NodesL+2,:,1)=T_east;                             % Redundant, it has no effect in calculations but is required in plotting section
+T(1,:,1)=T_west;
 % ------------------- Initial Conditions for steady state section -------------------
 Tss=zeros(NodesL+2,NodesH+2);        Tss2=zeros(NodesL+2,NodesH+2);
 Tss(:,1)=T_south;            Tss2(:,1)=T_south;
@@ -101,41 +102,34 @@ Tss(1,:)=T_west;             Tss2(1,:)=T_west;
     end
    
 
-%% 4- Finite difference section (Using 2nd order Runge Kutte or Euler in time or forward method)
+%% 4- Implected difference section (Using Advances diffusion equation in time with Guass elimination)
 
 k=1;
-switch Solution_type
-    case '2nd order Runge-Kutte'
-    err_R_k_max(k)=100;                            % initial error
-    err_R_k_min(k)=100;                            % initial error
-    while err_R_k_max(k)>=tolerance || err_R_k_min(k)>=tolerance
-      for i=2:NodesL
-        for j=2:NodesH
-            if i<=NodesL/2
-                k1=Alpha1*(((T(i-1,j,k)-2*T(i,j,k)+T(i+1,j,k))/dx^2)+((T(i,j-1,k)-2*T(i,j,k)+T(i,j+1,k))/dy^2));
-                Tk=T(:,:,k)+k1*dt1;
-                k2=Alpha1*(((Tk(i-1,j)-2*Tk(i,j)+Tk(i+1,j))/dx^2)+((Tk(i,j-1)-2*Tk(i,j)+Tk(i,j+1))/dy^2));
-                T(i,j,k+1) =T(i,j,k)+(dt1/2)*(k1+k2);
-            else
-                k1=Alpha2*(((T(i-1,j,k)-2*T(i,j,k)+T(i+1,j,k))/dx^2)+((T(i,j-1,k)-2*T(i,j,k)+T(i,j+1,k))/dy^2));
-                Tk=T(:,:,k)+k1*dt2;
-                k2=Alpha2*(((Tk(i-1,j)-2*Tk(i,j)+Tk(i+1,j))/dx^2)+((Tk(i,j-1)-2*Tk(i,j)+Tk(i,j+1))/dy^2));
-                T(i,j,k+1) =T(i,j,k)+(dt2/2)*(k1+k2);
-            end
-            % enforce Neumann boundary conditions insulation
-                T(i,end) = T(i,end-1);
-                T(i,1) =T(i,2);
-                T(end,j) = T(end-1,j);
-                T(1,j) = T(2,j);  
-        end
-      end
-      if T(mid_i,mid_j,k)>= T_avg
-                disp('reached');
-                break;
-      end 
-      k=k+1;
+A = ContructMatric(NodesL+2, NodesH+2, sigma);
+err_R_k_max(k)=1000;                            % initial error
+err_R_k_min(k)=1000;                            % initial error
+while err_R_k_max(k)>=tolerance || err_R_k_min(k)>=tolerance
+    disp(T(:,:,1))
+    for j=1:t_end
+       b = ContructRHS(NodesL+2, NodesH+2, sigma, T(:,:,k), T_bc);
+       T_interior = gauss2(A,b);
+       MatrixT = map_1Dto2D(NodesL+2, NodesH+2, T_interior, T_bc);
+       if MatrixT(mid_j,mid_i)>=T_avg
+           fprintf('Center of plate reached at time %d ', dt)
+           break
+       end
+       k=k+1;
+       disp(MatrixT);
+       disp(T(:,:,k-1));
+       T(:,:,k) = MatrixT;
       err_R_k_max(k)=abs(max(max(T(:,:,k)-Tss)));        %calculate error
+      disp(err_R_k_max(k));
+      disp(err_R_k_max(k-1));
+      disp('1')
       err_R_k_min(k)=abs(min(min(T(:,:,k)-Tss)));        %calculate error
+      disp(err_R_k_min(k));
+      disp(err_R_k_min(k-1));
+       disp('end')
       if round(err_R_k_max(k),5)==round(err_R_k_max(k-1),5) && err_R_k_max(k)~= 0      % Test solution convergence
        errordlg('The solution is not converging, Please choose a larger tolerance','tolerance Error');
        close(message)
@@ -146,91 +140,7 @@ switch Solution_type
        close(message)
        return
       end
-     end
-
-    case'Euler' % with central Differincal
-        disp(T(:,:,2))
-        err_E_max(k)=100;                            % initial error
-        err_E_min(k)=100;                            % initial error
-        while err_E_max(k)>=tolerance || err_E_min(k)>=tolerance
-          for i=2:NodesL
-            for j=2:NodesH
-                if i<=NodesL/2
-                    T(i,j,k+1) = T(i,j,k)+dt1*Alpha1*(((T(i-1,j,k)-2*T(i,j,k)+T(i+1,j,k))/dx^2)+((T(i,j-1,k)-2*T(i,j,k)+T(i,j+1,k))/dy^2));
-                else
-                    T(i,j,k+1) = T(i,j,k)+dt2*Alpha2*(((T(i-1,j,k)-2*T(i,j,k)+T(i+1,j,k))/dx^2)+((T(i,j-1,k)-2*T(i,j,k)+T(i,j+1,k))/dy^2));
-                end
-                % enforce Neumann boundary conditions insulation
-                T(i,end) = T(i,end-1);
-                T(i,1) =T(i,2);
-                T(end,j) = T(end-1,j);
-                T(1,j) = T(2,j);
-              
-            end
-          end
-          if T(mid_i,mid_j,k)>= T_avg
-                    break
-          end
-          k=k+1;
-          err_E_max(k)=abs(max(max(T(:,:,k)-Tss)));        %calculate error
-          err_E_min(k)=abs(min(min(T(:,:,k)-Tss)));        %calculate error
-          if round(err_E_max(k),5)==round(err_E_max(k-1),5) && err_E_max(k)~= 0      % Test solution convergence
-            errordlg('The solution is not converging, Please choose a larger tolerance','tolerance Error');
-            close(message)
-            return
-          end
-          if round(err_E_min(k),5)==round(err_E_min(k-1),5) && err_E_min(k)~= 0      % Test solution convergence
-            errordlg('The solution is not converging, Please choose a larger tolerance','tolerance Error');
-            close(message)
-            return
-          end
-        end
-     
-    case'Forward'
-        err_E_max(k)=100;                            % initial error
-        err_E_min(k)=100;                            % initial error
-        while err_E_max(k)>=tolerance || err_E_min(k)>=tolerance
-          for i=2:NodesL
-            for j=2:NodesH
-                if i<=NodesL/2
-                    T(i,j,k+1) = T(i,j,k)+dt1*Alpha1*(((T(i+2,j,k)-2*T(i+1,j,k)+T(i,j,k))/dx^2)+((T(i,j+2,k)-2*T(i,j+1,k)+T(i,j,k))/dy^2));
-                else
-                    T(i,j,k+1) = T(i,j,k)+dt2*Alpha2*(((T(i+2,j,k)-2*T(i+1,j,k)+T(i,j,k))/dx^2)+((T(i,j+2,k)-2*T(i,j+1,k)+T(i,j,k))/dy^2));
-                end
-                % enforce Neumann boundary conditions insulation
-                T(i,end) = T(i,end-1);
-                T(i,1) = T(i,2);
-                T(end,j) = T(end-1,j);
-                T(1,j) = T(2,j);
-                
-            end
-          end
-          if T(mid_i,mid_j)>= T_avg || k>2046
-                    disp('reached');
-                    k=k+1;
-                    break
-          end    
-          k=k+1;
-          err_E_max(k)=abs(max(max(T(:,:,k)-Tss)));        %calculate error
-          err_E_min(k)=abs(min(min(T(:,:,k)-Tss)));        %calculate error
-          if round(err_E_max(k),5)==round(err_E_max(k-1),5) && err_E_max(k)~= 0      % Test solution convergence
-            errordlg('The solution is not converging, Please choose a larger tolerance','tolerance Error');
-            close(message)
-            return
-          end
-          if round(err_E_min(k),5)==round(err_E_min(k-1),5) && err_E_min(k)~= 0      % Test solution convergence
-            errordlg('The solution is not converging, Please choose a larger tolerance','tolerance Error');
-            close(message)
-            return
-          end
-        end
-         
-    
-
-    case []
-    close(message)
-    msgbox('Error, Please re-run the code and choose Euler or 2nd order Runge-Kutte to continue the solution')
-    return
+    end
 end
 T=T(:,:,1:k);                                            % delete the unused assigned zero layers
 SStime=k*dt1;                                             % steady state time
@@ -273,11 +183,11 @@ caxis([T_min T_max]);
 view(90,-90);
 xlim([0 L+dx]); xlabel('Length');
 ylim([0 H+dy]); ylabel('Width');
-zlim([T_min T_max]); zlabel('Temprature');
+zlim([T_min T_max]); zlabel('Temperature');
 drawnow
 hold off
 
-subplot(2,2,4)
+ subplot(2,2,4)
 hold on
 title(sprintf('Temperature at steady state time : %i seconds ',round(SStime)))
 scatter(k,Tss(floor(NodesL/4),floor(NodesH/4)),'ko','markerfacecolor','r'); 
@@ -297,7 +207,8 @@ hold off
 
 %%%             ------------ Animated plot ----------
 
-for j=1:n_time                                
+for j=1:n_time                               
+    
 subplot(2,2,1)
 surf(x,y,T(:,:,j))
 hold on
@@ -330,4 +241,5 @@ drawnow
 hold off
 
 end
+
 

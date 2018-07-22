@@ -31,10 +31,10 @@ function MatrixTA = map_1Dto2D(nx, ny, T_1D, T_bc)
         end
     end
     % Dirichlet BC
-    MatrixTA(0,:) = T_bc;
+    MatrixTA(1,:) = T_bc;
     MatrixTA(end,:) = T_bc;
-    MatrixTA(:,0) = T_bc;
-     MatrixTA(:,end) = T_bc;
+    MatrixTA(:,1) = T_bc;
+    MatrixTA(:,end) = T_bc;
     % Neumann BC
     MatrixTA(end,:) = MatrixTA(end-1,:);
     MatrixTA(1,:) = MatrixTA(2,:);
