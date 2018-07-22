@@ -29,12 +29,8 @@ Alpha2 = K2/(p2*Hc2);
 NodesL = 20; % nodes in x direction
 NodesH = 20; % nodes in y direction
 L = 1; H = 0.5; % Length and height of each plate in meters
-T_initial= 0 ;                   % Initial temperature in all nodes ( the whole plate )
-T_east   =  100;                   % temperature on the upper side ( at y=0  "Dirichlet Conditions" )
-T_west   =  100;                   % temperature on the lower side ( at y=H "Dirichlet Conditions" )
-T_north  = 100 ;                   % temperature on the left  side ( at x=0  "Dirichlet Conditions" )
-T_south  = 100 ;                   % temperature on the right side ( at x=L "Dirichlet Conditions" ) 
-T_bc = 100; %Dirichlet BC
+T_initial= 0 ;                   % Initial temperature in all nodes ( the whole plate ) 
+T_bc = 100; %Dirichlet Boundary Condidtions
 t_end=10 ;                        % final time for visual simulation (sec)
 dt=0.6 ;                           % time step (1 sec)
 
@@ -66,25 +62,28 @@ else
     return
 end
 message=msgbox('Your computer is now solving the problem, Please wait..... ');    % Busy message 
-% ----------------- Initial Conditions for finite difference section ---------------
+% ----------------- Initial Conditions for Implected difference section ---------------
 T=zeros(NodesL+2,NodesH+2,75000);                       % set max iterations 75,000 due to memory limitations (T variable takes maximum 1GB in memory)
 T(:,:,1)=T_initial;
-T(:,1,1)=T_south;
-T(:,2,1)=T_south;
-T(:,NodesH+1,1)=T_north;
-T(:,NodesH+2,1)=T_north;                            % Redundant, it has no effect in calculations but is required in plotting section
-T(NodesL+1,:,1)=T_east;
-T(NodesL+2,:,1)=T_east;                             % Redundant, it has no effect in calculations but is required in plotting section
-T(1,:,1)=T_west;
-T(2,:,1)=T_west;
+T(:,1,1)=T_bc;
+T(:,2,1)=T_bc;
+T(:,NodesH+1,1)=T_bc;
+T(:,NodesH+2,1)=T_bc;                            
+T(NodesL+1,:,1)=T_bc;
+T(NodesL+2,:,1)=T_bc;                             
+T(1,:,1)=T_bc;
+T(2,:,1)=T_bc;
 % ------------------- Initial Conditions for steady state section -------------------
 Tss=zeros(NodesL+2,NodesH+2);        Tss2=zeros(NodesL+2,NodesH+2);
-Tss(:,1)=T_south;            Tss2(:,1)=T_south;
-Tss(:,NodesH+1)=T_north;         Tss2(:,NodesH+1)=T_north;
-Tss(:,NodesH+2)=T_north;         Tss2(:,NodesH+2)=T_north;             % Redundant, it has no effect in calculations but is required in plotting section
-Tss(NodesL+1,:)=T_east;          Tss2(NodesL+1,:)=T_east;
-Tss(NodesL+2,:)=T_east;          Tss2(NodesL+2,:)=T_east;              % Redundant, it has no effect in calculations but is required in plotting section
-Tss(1,:)=T_west;             Tss2(1,:)=T_west;
+Tss(:,1)=T_bc;            Tss2(:,1)=T_bc;
+Tss(:,2)=T_bc;            Tss2(:,2)=T_bc;
+Tss(:,NodesH+1)=T_bc;         Tss2(:,NodesH+1)=T_bc;
+Tss(:,NodesH+2)=T_bc;         Tss2(:,NodesH+2)=T_bc;             
+Tss(NodesL+1,:)=T_bc;          Tss2(NodesL+1,:)=T_bc;
+Tss(NodesL+2,:)=T_bc;          Tss2(NodesL+2,:)=T_bc;              
+Tss(1,:)=T_bc;             Tss2(1,:)=T_bc;
+Tss(2,:)=T_bc;             Tss2(2,:)=T_bc;
+
 
 
 %% 3- Steady-State section

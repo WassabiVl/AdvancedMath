@@ -68,20 +68,24 @@ message=msgbox('Your computer is now solving the problem, Please wait..... ');  
 % ----------------- Initial Conditions for finite difference section ---------------
 T=zeros(NodesL+2,NodesH+2,75000);                       % set max iterations 75,000 due to memory limitations (T variable takes maximum 1GB in memory)
 T(:,1,:)=T_south;
+T(:,2,:)=T_south;
 T(:,NodesH+1,:)=T_north;
-T(:,NodesH+2,:)=T_north;                            % Redundant, it has no effect in calculations but is required in plotting section
+T(:,NodesH+2,:)=T_north;                            
 T(NodesL+1,:,:)=T_east;
-T(NodesL+2,:,:)=T_east;                             % Redundant, it has no effect in calculations but is required in plotting section
+T(NodesL+2,:,:)=T_east;                             
 T(1,:,:)=T_west;
+T(2,:,:)=T_west;
 T(:,:,1)=T_initial;
 % ------------------- Initial Conditions for steady state section -------------------
 Tss=zeros(NodesL+2,NodesH+2);        Tss2=zeros(NodesL+2,NodesH+2);
 Tss(:,1)=T_south;            Tss2(:,1)=T_south;
+Tss(:,2)=T_south;            Tss2(:,2)=T_south;
 Tss(:,NodesH+1)=T_north;         Tss2(:,NodesH+1)=T_north;
 Tss(:,NodesH+2)=T_north;         Tss2(:,NodesH+2)=T_north;             % Redundant, it has no effect in calculations but is required in plotting section
 Tss(NodesL+1,:)=T_east;          Tss2(NodesL+1,:)=T_east;
 Tss(NodesL+2,:)=T_east;          Tss2(NodesL+2,:)=T_east;              % Redundant, it has no effect in calculations but is required in plotting section
 Tss(1,:)=T_west;             Tss2(1,:)=T_west;
+Tss(2,:)=T_west;             Tss2(2,:)=T_west;
 
 
 %% 3- Steady-State section
