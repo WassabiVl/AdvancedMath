@@ -1,6 +1,6 @@
 % 2D Heat Equation with 2 Plates Using Finite Difference Method
 %  Wael Al Atrash 118011
-%   Advanced Numerical Mathmatics
+%   Advanced Numerical Mathematics
 %    Bauhaus University
 
 
@@ -145,8 +145,8 @@ close(message)                                               % close the busy me
 
 %% 5- Printed results section
 
-fprintf('This is the solution of the heat equation through out a plate of diamensions %i X %i of material %s \n',L,H,name);
-fprintf('The solution is  based on "Dirichlet Boundry Conditions" with initial values \n')
+fprintf('This is the solution of the heat equation through out a plate of dimensions %i X %i of material %s \n',L,H,name);
+fprintf('The solution is  based on "Dirichlet Boundary Conditions" with initial values \n')
 fprintf('T(x,0,t)=%i , T(x,%i,t)=%i , T(0,y,t)=%i , T(%i,y,t)=%i , T(x,y,0)=%i \n',T_south,H,T_north,T_west,L,T_east,T_initial)
 fprintf('The plate takes %i seconds to reach steady-state temperature with tolerance %0.2f \n',round(SStime),tolerance);
 fprintf('Now, Simulation is running with final time %i seconds and step %0.2f second \n',t_end,(dt1+dt2)/2)
@@ -179,7 +179,7 @@ caxis([T_min T_max]);
 view(90,-90);
 xlim([0 L+dx]); xlabel('Length');
 ylim([0 H+dy]); ylabel('Width');
-zlim([T_min T_max]); zlabel('Temprature');
+zlim([T_min T_max]); zlabel('Temperature');
 drawnow
 hold off
 
