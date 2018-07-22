@@ -50,9 +50,8 @@ sigma = Alpha1*dt1/(dx/2) + Alpha2*dt2/(dx/2);
 A = ContructMatric(dx,dy,sigma);
 
 n_time=round(t_end/dt1);                                                           % number of iterations for time
-T_max=max([T_east T_west T_north T_south T_initial]);                      % Max T to set axes limits in plotting
-T_min=min([T_east T_west T_north T_south T_initial]);                      % Min T to set axes limits in plotting
-T_avg = (T_east+ T_west+ T_north+ T_south+ T_initial)/5;
+T_max=max([T_bc T_initial]);                      % Max T to set axes limits in plotting
+T_min=min([T_bc T_initial]);                      % Min T to set axes limits in plotting
 mid_i = round(NodesL/2);
 mid_j = round(NodesH/2);
 
@@ -73,6 +72,7 @@ T(NodesL+1,:,1)=T_bc;
 T(NodesL+2,:,1)=T_bc;                             
 T(1,:,1)=T_bc;
 T(2,:,1)=T_bc;
+T_avg = mean2(T(:,:,1));
 % ------------------- Initial Conditions for steady state section -------------------
 Tss=zeros(NodesL+2,NodesH+2);        Tss2=zeros(NodesL+2,NodesH+2);
 Tss(:,1)=T_bc;            Tss2(:,1)=T_bc;
@@ -109,28 +109,20 @@ k=1;
 A = ContructMatric(NodesL+2, NodesH+2, sigma);
 err_R_k_max(k)=1000;                            % initial error
 err_R_k_min(k)=1000;                            % initial error
-%while err_R_k_max(k)>=tolerance || err_R_k_min(k)>=tolerance 
-    disp(T(:,:,1))
+%while T(mid_i,mid_j,k)<= T_avg  
     for j=1:t_end
        b = ContructRHS(NodesL+2, NodesH+2, sigma, T(:,:,k), T_bc);
        T_interior = gauss2(A,b);
+       %T_interior = linsolve(A,b);
        MatrixT = map_1Dto2D(NodesL+2, NodesH+2, T_interior, T_bc);
-       if MatrixT(mid_j,mid_i)>=T_avg
-           fprintf('Center of plate reached at time %d ', dt)
+       k=k+1;
+       T(:,:,k) = MatrixT;
+       disp(T(:,:,k));
+       if T(mid_i,mid_j,k)>= T_avg || k> 72.000
            break
        end
-       k=k+1;
-       disp(MatrixT);
-       disp(T(:,:,k-1));
-       T(:,:,k) = MatrixT;
       err_R_k_max(k)=abs(max(max(T(:,:,k)-Tss)));        %calculate error
-      disp(err_R_k_max(k));
-      disp(err_R_k_max(k-1));
-      disp('1')
       err_R_k_min(k)=abs(min(min(T(:,:,k)-Tss)));        %calculate error
-      disp(err_R_k_min(k));
-      disp(err_R_k_min(k-1));
-       disp('end')
       if round(err_R_k_max(k),5)==round(err_R_k_max(k-1),5) && err_R_k_max(k)~= 0      % Test solution convergence
        errordlg('The solution is not converging, Please choose a larger tolerance','tolerance Error');
        close(message)
@@ -152,7 +144,7 @@ close(message)                                               % close the busy me
 
 fprintf('This is the solution of the heat equation through out a plate of dimensions %i X %i of material %s \n',L,H,name);
 fprintf('The solution is  based on "Dirichlet Boundary Conditions" with initial values \n')
-fprintf('T(x,0,t)=%i , T(x,%i,t)=%i , T(0,y,t)=%i , T(%i,y,t)=%i , T(x,y,0)=%i \n',T_south,H,T_north,T_west,L,T_east,T_initial)
+fprintf('T(x,0,t)=%i , T(x,%i,t)=%i , T(0,y,t)=%i , T(%i,y,t)=%i , T(x,y,0)=%i \n',T_bc,H,T_bc,T_bc,L,T_bc,T_initial)
 fprintf('The plate takes %i seconds to reach steady-state temperature with tolerance %0.2f \n',round(SStime),tolerance);
 fprintf('Now, Simulation is running with final time %i seconds and step %0.2f second \n',t_end,(dt1+dt2)/2)
 
@@ -166,40 +158,41 @@ end
 for i = 1:NodesH+2                 
 y(i) =(i-1)*dy; 
 end
+[x,y] = meshgrid(x,y);
 
 % %%%            -------------- Constant plot ----------------
 
 subplot(2,2,3)                           
 hold on
-title(sprintf('Temperature at steady state time : %i seconds ',round(SStime)))
-surf(x,y,Tss)
-plot3(  L/4,  H/4,T_max,'ko','markerfacecolor','r') % plot red point
+title(sprintf('Temperature at iteration number : %i  ',round(k)))
+surf(x,y,T(:,:,k))
+plot3(  0,  0,T_max,'ko','markerfacecolor','r') % plot red point
 plot3(  L/2,  H/2,T_max,'ko','markerfacecolor','g') % plot green point
-plot3(3*L/4,3*H/4,T_max,'ko','markerfacecolor','b') % plot blue point
-plot3(  L/4,  H/4,T_min,'ko','markerfacecolor','r') % plot red point
+plot3(L,H,T_max,'ko','markerfacecolor','b') % plot blue point
+plot3(  0,  0,T_min,'ko','markerfacecolor','r') % plot red point
 plot3(  L/2,  H/2,T_min,'ko','markerfacecolor','g') % plot green point
-plot3(3*L/4,3*H/4,T_min,'ko','markerfacecolor','b') % plot blue point
+plot3(L,H,T_min,'ko','markerfacecolor','b') % plot blue point
 cb=colorbar;
-caxis([T_min T_max]);
+caxis('auto');
 view(90,-90);
 xlim([0 L+dx]); xlabel('Length');
 ylim([0 H+dy]); ylabel('Width');
-zlim([T_min T_max]); zlabel('Temperature');
+zlim([T_min T_max]); zlabel('Temprature');
 drawnow
 hold off
 
 subplot(2,2,4)
 hold on
-title(sprintf('Temperature at steady state time : %i seconds ',round(SStime)))
-scatter(k,Tss(floor(NodesL/4),floor(NodesH/4)),'ko','markerfacecolor','r'); 
-val=(sprintf('  T =  %0.2f   ',Tss(floor(NodesL/4),floor(NodesH/4))));
-text(k,Tss(floor(NodesL/4),floor(NodesH/4)),val,'HorizontalAlignment','Left');
-scatter(k,Tss(floor(NodesL/2),floor(NodesH/2)),'ko','markerfacecolor','g'); 
-val=(sprintf('  T =  %0.2f   ',Tss(floor(NodesL/2),floor(NodesH/2))));
-text(k,Tss(floor(NodesL/2),floor(NodesH/2)),val,'HorizontalAlignment','right');
-scatter(k,Tss(floor(3*NodesL/4),floor(3*NodesH/4)),'ko','markerfacecolor','b'); 
-val=(sprintf('  T =  %0.2f   ',Tss(floor(3*NodesL/4),floor(3*NodesH/4))));
-text(k,Tss(floor(3*NodesL/4),floor(3*NodesH/4)),val,'HorizontalAlignment','Left');
+title(sprintf('Temperature at iteration number : %i  ',round(k)))
+scatter(k,T(1,1,k),'ko','markerfacecolor','r'); 
+val=(sprintf('  T =  %0.2f   ',T(1,1,k)));
+text(k,T(1,1,k),val,'HorizontalAlignment','Left');
+scatter(k,T(floor(NodesL/2),floor(NodesH/2),k),'ko','markerfacecolor','g'); 
+val=(sprintf('  T =  %0.2f   ',T(floor(NodesL/2),floor(NodesH/2),k)));
+text(k,T(floor(NodesL/2),floor(NodesH/2),k),val,'HorizontalAlignment','right');
+scatter(k,T(NodesL+2,NodesH+2,k),'ko','markerfacecolor','b'); 
+val=(sprintf('  T =  %0.2f   ',T(NodesL+2,NodesH+2,k)));
+text(k,T(NodesL+2,NodesH+2,k),val,'HorizontalAlignment','Left');
 axis tight; xlabel('Time Iterations');
 ylim([T_min T_max]); ylabel('Temperature');
 legend('Red Point','Green Point ','Blue Point ','Location','northwest')
@@ -208,18 +201,17 @@ hold off
 
 %%%             ------------ Animated plot ----------
 
-for j=1:k                               
-    
+for j=1:k                                
     subplot(2,2,1)
     surf(x,y,T(:,:,j))
     hold on
-    title(sprintf('Temperature at time : %i seconds ',round(j*((dt1+dt2)/2))))
-    plot3(  L/4,  H/4,T_max,'ko','markerfacecolor','r') % plot red point
+    title(sprintf('Temperature at iteration number : %i ',round(k)))
+    plot3(  0,  0,T_max,'ko','markerfacecolor','r') % plot red point
     plot3(  L/2,  H/2,T_max,'ko','markerfacecolor','g') % plot green point
-    plot3(3*L/4,3*H/4,T_max,'ko','markerfacecolor','b') % plot blue point
-    plot3(  L/4,  H/4,T_min,'ko','markerfacecolor','r') % plot red point
+    plot3(L,H,T_max,'ko','markerfacecolor','b') % plot blue point
+    plot3(  0,  0,T_min,'ko','markerfacecolor','r') % plot red point
     plot3(  L/2,  H/2,T_min,'ko','markerfacecolor','g') % plot green point
-    plot3(3*L/4,3*H/4,T_min,'ko','markerfacecolor','b') % plot blue point
+    plot3(L,H,T_min,'ko','markerfacecolor','b') % plot blue point
     cb=colorbar;
     caxis([T_min T_max]);
     view(90,-90);
@@ -231,16 +223,14 @@ for j=1:k
 
     subplot(2,2,2)
     hold on
-    title(sprintf('Temperature at time : %i seconds ',round(j*((dt1+dt2)/2))))
-    scatter(j,T(floor((NodesL+2)/4),floor((NodesH+2)/4),j),'r.'); 
+    title(sprintf('Temperature at time : %i seconds ',round(k)))
+    scatter(j,T(1,1,j),'r.'); 
     scatter(j,T(ceil((NodesL+2)/2),ceil((NodesH+2)/2),j),'g.'); 
-    scatter(j,T(ceil(3*(NodesL+2)/4),ceil(3*(NodesH+2)/4),j),'b.'); 
+    scatter(j,T(NodesL+2,NodesH+2,j),'b.'); 
     axis tight; xlabel('Time Iterations');
     axis tight; ylabel('Temperature');
     legend('Red Point','Green Point ','Blue Point ','Location','northwest')
     drawnow
-    hold off
+hold off
 
 end
-
-

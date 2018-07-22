@@ -17,8 +17,8 @@ function matrixA = ContructMatric(nx,ny,sigma)
     x = round((nx-2)*(ny-2));
     matrixA = zeros(x,x);
     row_number = 1;
-    for j=1:ny                                                    % looping
-        for i=1:nx
+    for j=1:ny-1                                                    % looping
+        for i=1:nx-1
             % construct the corners
             if i == 1 && j== 1 % Bottom left corner (Dirichlet down and left)
                 matrixA(row_number,row_number) = 1/sigma +4;
