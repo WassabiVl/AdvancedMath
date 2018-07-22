@@ -23,7 +23,7 @@ function MatrixTA = map_1Dto2D(nx, ny, T_1D, T_bc)
     
     MatrixTA = zeros(ny,nx);
     
-    row_number = 0;
+    row_number = 1;
     for j=1:ny-1                                                    % looping
         for i=1:nx-1
             MatrixTA(j,i) = T_1D(row_number);
@@ -32,8 +32,12 @@ function MatrixTA = map_1Dto2D(nx, ny, T_1D, T_bc)
     end
     % Dirichlet BC
     MatrixTA(0,:) = T_bc;
+    MatrixTA(end,:) = T_bc;
     MatrixTA(:,0) = T_bc;
+     MatrixTA(:,end) = T_bc;
     % Neumann BC
     MatrixTA(end,:) = MatrixTA(end-1,:);
+    MatrixTA(1,:) = MatrixTA(2,:);
     MatrixTA(:,end) = MatrixTA(:,end-1);
+    MatrixTA(:,1) = MatrixTA(:,2);
 end
