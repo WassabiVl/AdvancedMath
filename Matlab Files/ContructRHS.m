@@ -25,9 +25,9 @@ function RHS = ContructRHS(nx,ny,sigma1,sigma2, T, T_bc)
     for j=1:ny-1                                                    % looping
         for i=1:nx-1
             if i<= nx/2
-                sigma = sigma1 % use plate 1 sigma
+                sigma = sigma1; % use plate 1 sigma
             else
-                sigma = sigma2 % use plate 2 sigma
+                sigma = sigma2; % use plate 2 sigma
             end
             % construct the corners
             if i == 1 && j== 1 % Bottom left corner (Dirichlet down and left)
