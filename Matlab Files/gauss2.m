@@ -1,3 +1,4 @@
+% solve the linear equation using the provided gauss equation
 function [x] = gauss2(A,b)
     if size(b,2)>1
         b = b';
@@ -12,7 +13,7 @@ function [x] = gauss2(A,b)
                 A(i,(k+1:n)) = A(i,(k+1:n)) - lambda*A(k,(k+1:n));
                 b(i) = b(i) - lambda*b(k);
             else
-                %error('Division by zero');
+                % error('Division by zero');
                 A1((2:n-1),:) = A((2:n-1),:);
                 A1(1,:) = A(n,:);
                 A1(n,:) = A(1,:);

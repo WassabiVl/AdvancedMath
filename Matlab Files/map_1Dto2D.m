@@ -1,7 +1,7 @@
 % Takes temperatures of solution of linear system, stored in 1D, 
  %   and puts them in a 2D array with the BCs
   %  Valid for constant Dirichlet bottom, left, right, up, and Neumann with zero 
-   % flux top and right
+   % flux all corner, sides
         
 %    Parameters:
  %   ----------

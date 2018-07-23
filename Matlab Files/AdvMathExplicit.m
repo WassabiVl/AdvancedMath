@@ -56,6 +56,7 @@ T_min=min([T_east T_west T_north T_south T_initial]);                      % Min
 
 mid_i = round(NodesL/2);
 mid_j = round(NodesH/2);
+
 Solution_type=questdlg('Which method you want to solve the time derivative with ?','Question','Euler','2nd order Runge-Kutte','Forward','Euler');                     % solve with 2nd order Runge Kutte in time or 2 to solve with Euler
 
 if dt1 <= 1/(2*Alpha1*((1/dx^2)+(1/dy^2))) || dt2 <= 1/(2*Alpha2*((1/dx^2)+(1/dy^2)))                              % test the stability condition 
@@ -77,78 +78,55 @@ T(end,:,1)=T_east;
 T(1,:,1)=T_west;
 %T(2,:,:)=T_west;
 T_avg = mean2(T(:,:,1));
-% ------------------- Initial Conditions for steady state section -------------------
-Tss=zeros(NodesL+2,NodesH+2);        Tss2=zeros(NodesL+2,NodesH+2);
-Tss(:,1)=T_south;            Tss2(:,1)=T_south;
-Tss(:,2)=T_south;            Tss2(:,2)=T_south;
-Tss(:,end-1)=T_north;         Tss2(:,NodesH+1)=T_north;
-Tss(:,end)=T_north;         Tss2(:,NodesH+2)=T_north;             % Redundant, it has no effect in calculations but is required in plotting section
-Tss(end-1,:)=T_east;          Tss2(NodesL+1,:)=T_east;
-Tss(end,:)=T_east;          Tss2(NodesL+2,:)=T_east;              % Redundant, it has no effect in calculations but is required in plotting section
-Tss(1,:)=T_west;             Tss2(1,:)=T_west;
-Tss(2,:)=T_west;             Tss2(2,:)=T_west;
 
+%% 3-Test matrix for the solution
 
-%% 3- Steady-State section
-
-
-   while err_SS_max(k)>=tolerance_ss || err_SS_min(k)>=tolerance_ss 
-    
-    for i=2:NodesL                                                    % looping
-        for j=2:NodesH
-            Tss2(i,j)=0.25*(Tss(i+1,j)+Tss(i,j+1)+Tss(i-1,j)+Tss(i,j-1));
-        end
-    end
-    k=k+1;                                                        % update k
-    err_SS_max(k)=abs(max(max(Tss2-Tss)));                        % calculate error
-    err_SS_min(k)=abs(min(min(Tss2-Tss)));                        % calculate error
-    Tss=Tss2;                                                     % update T
-    end
-   
+% rule of thermodynamics, if no external factors is affecting the system at time >= 0, the end state of the plate be an mean of all the tempretures
+% and not a steady state solution
+Tss(NodesL+2,NodesH+2) = T_avg;
 
 %% 4- Finite difference section (Using 2nd order Runge Kutte or Euler in time or forward method)
 
 k=1;
 switch Solution_type
     case '2nd order Runge-Kutte'
-    err_R_k_max(k)=100;                            % initial error
-    err_R_k_min(k)=100;                            % initial error
-    while err_R_k_max(k)>=tolerance || err_R_k_min(k)>=tolerance
-      for i=2:NodesL+1
-        for j=2:NodesH+1
-            if i<=NodesL/2
-                k1=Alpha1*(((T(i-1,j,k)-2*T(i,j,k)+T(i+1,j,k))/dx^2)+((T(i,j-1,k)-2*T(i,j,k)+T(i,j+1,k))/dy^2));
-                Tk=T(:,:,k)+k1*dt1;
-                k2=Alpha1*(((Tk(i-1,j)-2*Tk(i,j)+Tk(i+1,j))/dx^2)+((Tk(i,j-1)-2*Tk(i,j)+Tk(i,j+1))/dy^2));
-                T(i,j,k+1) =T(i,j,k)+(dt1/2)*(k1+k2);
-            else
-                k1=Alpha2*(((T(i-1,j,k)-2*T(i,j,k)+T(i+1,j,k))/dx^2)+((T(i,j-1,k)-2*T(i,j,k)+T(i,j+1,k))/dy^2));
-                Tk=T(:,:,k)+k1*dt2;
-                k2=Alpha2*(((Tk(i-1,j)-2*Tk(i,j)+Tk(i+1,j))/dx^2)+((Tk(i,j-1)-2*Tk(i,j)+Tk(i,j+1))/dy^2));
-                T(i,j,k+1) =T(i,j,k)+(dt2/2)*(k1+k2);
+        err_R_k_max(k)=100;                            % initial error
+        err_R_k_min(k)=100;                            % initial error
+        while err_R_k_max(k)>=tolerance || err_R_k_min(k)>=tolerance
+          for i=2:NodesL+1
+            for j=2:NodesH+1
+                if i<=NodesL/2
+                    k1=Alpha1*(((T(i-1,j,k)-2*T(i,j,k)+T(i+1,j,k))/dx^2)+((T(i,j-1,k)-2*T(i,j,k)+T(i,j+1,k))/dy^2));
+                    Tk=T(:,:,k)+k1*dt1;
+                    k2=Alpha1*(((Tk(i-1,j)-2*Tk(i,j)+Tk(i+1,j))/dx^2)+((Tk(i,j-1)-2*Tk(i,j)+Tk(i,j+1))/dy^2));
+                    T(i,j,k+1) =T(i,j,k)+(dt1/2)*(k1+k2);
+                else
+                    k1=Alpha2*(((T(i-1,j,k)-2*T(i,j,k)+T(i+1,j,k))/dx^2)+((T(i,j-1,k)-2*T(i,j,k)+T(i,j+1,k))/dy^2));
+                    Tk=T(:,:,k)+k1*dt2;
+                    k2=Alpha2*(((Tk(i-1,j)-2*Tk(i,j)+Tk(i+1,j))/dx^2)+((Tk(i,j-1)-2*Tk(i,j)+Tk(i,j+1))/dy^2));
+                    T(i,j,k+1) =T(i,j,k)+(dt2/2)*(k1+k2);
+                end
             end
-        end
-      end
-      k=k+1;
-      % reinforce Neumann boundary conditions insulation
-      disp(T(:,:,k));
-      T(:,end,k) = T(:,end-1,k); T(:,end,k+1) = T(:,end,k);
-      T(:,1,k) =T(:,2,k); T(:,1,k+1) = T(:,1,k);
-      T(end,:,k) = T(end-1,:,k); T(end,:,k+1) = T(end,:,k);
-      T(1,:,k) = T(2,:,k); T(1,:,k+1) = T(1,:,k);
-      disp(T(:,:,k));
-      err_R_k_max(k)=abs(max(max(T(:,:,k)-Tss)));        %calculate error
-      err_R_k_min(k)=abs(min(min(T(:,:,k)-Tss)));        %calculate error
-      if round(err_E_max(k),5)==round(err_E_max(k-1),5) && err_E_max(k)~= 0 || T(mid_i,mid_j,k)>= T_avg    % break out of loop
+          end
+          k=k+1;
+          % reinforce Neumann boundary conditions insulation
+          disp(T(:,:,k));
+          T(:,end,k) = T(:,end-1,k); T(:,end,k+1) = T(:,end,k);
+          T(:,1,k) =T(:,2,k); T(:,1,k+1) = T(:,1,k);
+          T(end,:,k) = T(end-1,:,k); T(end,:,k+1) = T(end,:,k);
+          T(1,:,k) = T(2,:,k); T(1,:,k+1) = T(1,:,k);
+          disp(T(:,:,k));
+          err_R_k_max(k)=abs(max(max(T(:,:,k)-Tss)));        %calculate error
+          err_R_k_min(k)=abs(min(min(T(:,:,k)-Tss)));        %calculate error
+          if round(err_E_max(k),5)==round(err_E_max(k-1),5) && err_E_max(k)~= 0 || T(mid_i,mid_j,k)>= T_avg    % break out of loop
+                break
+          end
+          if round(err_E_min(k),5)==round(err_E_min(k-1),5) && err_E_min(k)~= 0 || T(mid_i,mid_j,k)>= T_avg     % break out of loop
             break
-      end
-      if round(err_E_min(k),5)==round(err_E_min(k-1),5) && err_E_min(k)~= 0 || T(mid_i,mid_j,k)>= T_avg     % break out of loop
-        break
-      end
-     end
+          end
+         end
 
     case'Euler' % with central Differincal
-        
         err_E_max(k)=100;                            % initial error
         err_E_min(k)=100;                            % initial error
         while err_E_max(k)>=tolerance || err_E_min(k)>=tolerance 
